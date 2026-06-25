@@ -39,7 +39,6 @@ async function editTelegramMessage(chatId, messageId, text, replyMarkup = null) 
   }).then(r => r.json());
 }
 
-// Вебхук Telegram
 app.post('/telegram-webhook', async (req, res) => {
   try {
     const update = req.body;
@@ -81,7 +80,6 @@ app.post('/telegram-webhook', async (req, res) => {
   }
 });
 
-// Приём заявки
 app.post('/api/submit', async (req, res) => {
   const { name, username, message } = req.body;
 
@@ -95,7 +93,6 @@ app.post('/api/submit', async (req, res) => {
   };
   await sendTelegramMessage(TELEGRAM_CHAT_ID, adminText, inlineKeyboard);
 
-  // Запись в таблицу и отправка email (всё внутри Google Script)
   try {
     await fetch(GOOGLE_SCRIPT_URL, {
       method: 'POST',
@@ -106,7 +103,6 @@ app.post('/api/submit', async (req, res) => {
     console.error('Google Script error:', e);
   }
 
-  // Автоответ пользователю
   if (username && userChatIds[username]) {
     await sendTelegramMessage(userChatIds[username], `👋 <b>Спасибо, ${name}!</b>\nМы получили твою заявку и скоро свяжемся с тобой.`);
   } else if (username) {
@@ -118,8 +114,5 @@ app.post('/api/submit', async (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-  res.json({ success: true });
-});
-
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
