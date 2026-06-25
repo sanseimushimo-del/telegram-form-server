@@ -15,19 +15,19 @@ app.use('/api/submit', limiter);
 const TELEGRAM_BOT_TOKEN = '8667715912:AAHgHzSwHRafoJkvRuUssryygOjD1E0y3h8';
 const TELEGRAM_CHAT_ID = '453801455';
 const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyPqvAG0XbwTGjjrXB1PJ8KoMMx8XMEkk2_PRPO0gPK8Zjt9FMmRc72zjNIJ2OjXapi8w/exec';
-const ADMIN_EMAIL = 'sanseimushimo@gmail.com';
 
 const userChatIds = {};
 const pendingWarnings = {};
 const lastRequests = {};
 const ticketMessages = {};
 
-// === Telegram helpers ===
 async function sendTelegramMessage(chatId, text, replyMarkup = null) {
   const payload = { chat_id: chatId, text, parse_mode: 'HTML' };
   if (replyMarkup) payload.reply_markup = JSON.stringify(replyMarkup);
   return fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
   }).then(r => r.json());
 }
 
@@ -35,13 +35,17 @@ async function editTelegramMessage(chatId, messageId, text, replyMarkup = null) 
   const payload = { chat_id: chatId, message_id: messageId, text, parse_mode: 'HTML' };
   if (replyMarkup) payload.reply_markup = JSON.stringify(replyMarkup);
   return fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageText`, {
-    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
   }).then(r => r.json());
 }
 
 async function deleteTelegramMessage(chatId, messageId) {
   return fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/deleteMessage`, {
-    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: chatId, message_id: messageId })
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ chat_id: chatId, message_id: messageId })
   }).then(r => r.json());
 }
 
@@ -57,7 +61,6 @@ async function updateStatusInSheet(username, timestamp, status, comment = '') {
   }
 }
 
-// === Webhook ===
 app.post('/telegram-webhook', async (req, res) => {
   try {
     const update = req.body;
@@ -102,7 +105,7 @@ app.post('/telegram-webhook', async (req, res) => {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               chat_id: chatId,
-              document: { value: buf.toString('base64'), filename: 'zayavki.csv' },
+              document: { file_data: buf.toString('base64'), file_name: 'zayavki.csv' },
               caption: '📋 Все заявки'
             })
           });
@@ -140,11 +143,9 @@ app.post('/telegram-webhook', async (req, res) => {
       } else if (action === 'take') {
         newText += '\n\n✅ <b>Статус:</b> Взято в работу';
         newMarkup = null;
-        // Уведомить пользователя
         if (userChatIds[targetUsername]) {
           await sendTelegramMessage(userChatIds[targetUsername], '🔔 Ваша заявка взята в работу. Ожидайте ответа.');
         }
-        // Обновить статус в таблице
         const ticket = ticketMessages[targetUsername];
         if (ticket) {
           await updateStatusInSheet(targetUsername, ticket.timestamp, 'В работе');
@@ -160,11 +161,9 @@ app.post('/telegram-webhook', async (req, res) => {
           await updateStatusInSheet(targetUsername, ticket.timestamp, 'Закрыто');
         }
       } else if (action === 'rate') {
-        // Обработка оценки
-        const rating = parseInt(targetUsername) || 5; // упрощённо – можно сделать кнопки 1-5
-        newText += `\n\n⭐ Оценка: ${rating}`;
+        newText += '\n\n⭐ Спасибо за оценку!';
         newMarkup = null;
-        await sendTelegramMessage(chatId, `Спасибо за оценку! Ваша заявка оценена на ${rating}.`);
+        await sendTelegramMessage(chatId, 'Спасибо за вашу оценку!');
       }
 
       await editTelegramMessage(chatId, messageId, newText, newMarkup);
@@ -184,11 +183,8 @@ app.post('/telegram-webhook', async (req, res) => {
   }
 });
 
-// === Приём заявки ===
 app.post('/api/submit', async (req, res) => {
   const { name, phone, username, topic, message } = req.body;
-
-  // Сохраняем timestamp для обновления статуса
   const timestamp = new Date().toISOString();
 
   if (username) {
@@ -210,7 +206,6 @@ app.post('/api/submit', async (req, res) => {
     ticketMessages[username].adminMessageId = sentMsg.result?.message_id;
   }
 
-  // Отправка в Google Script (email + таблица)
   try {
     await fetch(GOOGLE_SCRIPT_URL, {
       method: 'POST',
@@ -232,9 +227,6 @@ app.post('/api/submit', async (req, res) => {
 
   res.json({ success: true });
 });
-
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
