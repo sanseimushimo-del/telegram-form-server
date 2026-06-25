@@ -6,12 +6,10 @@ app.use(express.json());
 
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
-const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxhz6jrinc_UkNV7AT5vgMXFzydKtIqoEHajlTCCQE_sqokkWluVQ4jj946-ZyQnkawtg/exec'; // замени на свой
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxhz6jrinc_UkNV7AT5vgMXFzydKtIqoEHajlTCCQE_sqokkWluVQ4jj946-ZyQnkawtg/exec';
 
-// Временное хранилище chat_id (в реальном проекте — БД)
 const userChatIds = {};
 
-// Вебхук для получения сообщений от Telegram
 app.post('/telegram-webhook', async (req, res) => {
   try {
     const update = req.body;
@@ -32,7 +30,6 @@ app.post('/telegram-webhook', async (req, res) => {
   }
 });
 
-// Вспомогательная функция отправки сообщения
 async function sendTelegramMessage(chatId, text, replyMarkup = null) {
   const payload = {
     chat_id: chatId,
@@ -47,11 +44,9 @@ async function sendTelegramMessage(chatId, text, replyMarkup = null) {
   }).then(r => r.json());
 }
 
-// Основной обработчик заявок
 app.post('/api/submit', async (req, res) => {
   const { name, username, message } = req.body;
 
-  // 1. Уведомление админу с кнопками
   const adminText = `🔥 <b>Новая заявка!</b>\nИмя: ${name}\nTelegram: ${username ? '@'+username : 'не указан'}\nСообщение: ${message}`;
   const inlineKeyboard = {
     inline_keyboard: [
@@ -62,7 +57,6 @@ app.post('/api/submit', async (req, res) => {
   };
   await sendTelegramMessage(TELEGRAM_CHAT_ID, adminText, inlineKeyboard);
 
-  // 2. Запись в Google Таблицу
   try {
     await fetch(GOOGLE_SCRIPT_URL, {
       method: 'POST',
@@ -73,19 +67,11 @@ app.post('/api/submit', async (req, res) => {
     console.error('Google Script error:', e);
   }
 
-  // 3. Автоответ пользователю (если его chat_id известен)
   if (username && userChatIds[username]) {
     await sendTelegramMessage(userChatIds[username], `👋 <b>Спасибо, ${name}!</b>\nМы получили твою заявку и скоро свяжемся с тобой.`);
   } else if (username) {
-    // Пользователь ещё не активировал бота — напомним админу
     await sendTelegramMessage(TELEGRAM_CHAT_ID, `ℹ️ Пользователь @${username} ещё не написал боту /start. Напомни ему активировать бота.`);
   }
-
-  res.json({ success: true });
-});
-
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
   res.json({ success: true });
 });
