@@ -6,7 +6,7 @@ app.use(express.json());
 
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
-const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbziCv4zhooSfepC-9uSNlzCavb87_9tbtwDM7aWusihCIpSeocrmWCsyHxLJ2tDMz6NvQ/exec';
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxhz6jrinc_UkNV7AT5vgMXFzydKtIqoEHajlTCCQE_sqokkWluVQ4jj946-ZyQnkawtg/exec';
 
 async function sendTelegramMessage(chatId, text) {
   return fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
