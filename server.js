@@ -1,30 +1,48 @@
 const express = require('express');
-const app = express();
-app.use(express.json());
 const cors = require('cors');
-app.use(cors());
+const app = express();
+app.use(cors({ origin: '*' }));
+app.use(express.json());
 
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbziCv4zhooSfepC-9uSNlzCavb87_9tbtwDM7aWusihCIpSeocrmWCsyHxLJ2tDMz6NvQ/exec';
+
+async function sendTelegramMessage(chatId, text) {
+  return fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ chat_id: chatId, text })
+  }).then(r => r.json());
+}
 
 app.post('/api/submit', async (req, res) => {
-    const { name, message } = req.body;
-    const text = `🔥 Новая заявка!\nИмя: ${name}\nСообщение: ${message}`;
-    
-    try {
-        await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                chat_id: TELEGRAM_CHAT_ID,
-                text: text
-            })
-        });
-        res.json({ success: true });
-    } catch (e) {
-        res.status(500).json({ error: true });
-    }
+  const { name, username, message } = req.body;
+  
+  // 1. Уведомление админу
+  const adminText = `🔥 Новая заявка!\nИмя: ${name}\nTelegram: ${username ? '@'+username : 'не указан'}\nСообщение: ${message}`;
+  await sendTelegramMessage(TELEGRAM_CHAT_ID, adminText);
+
+  // 2. Отправка в Google Таблицу
+  try {
+    await fetch(GOOGLE_SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, username, message })
+    });
+    console.log('Записано в таблицу');
+  } catch (e) {
+    console.error('Ошибка записи в таблицу:', e);
+  }
+
+  // 3. Попытка найти chat_id пользователя для автоответа
+  // (Пока заглушка — доработаем после того, как добавим команду /start)
+  if (username) {
+    await sendTelegramMessage(TELEGRAM_CHAT_ID, `ℹ️ Пользователь @${username} ещё не писал боту. Напомни ему нажать /start.`);
+  }
+
+  res.json({ success: true });
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`)); 
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
