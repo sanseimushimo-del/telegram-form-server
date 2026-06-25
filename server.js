@@ -6,7 +6,7 @@ app.use(express.json());
 
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
-const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwkQOikuxRfWREMAD6cjtE2M10xWAsrS0kETJb9h5fGoedxjSXf0LMujcNG8epM9VTxwg/exec';
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwI6fxmpUdRoODrvEkpeAXeLNxqknfPIlpIjfytKDUYF0x8WPPt6LKGePM9OnXILtT-OA/exec';
 
 const userChatIds = {};
 
